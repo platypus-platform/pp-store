@@ -33,7 +33,7 @@ func (app *IntentApp) ActiveVersion() string {
 // Fetches data from the intent store and emits it on the channel.
 // It skips any malformed data. The only error condition is if the store is not
 // available in the first place.
-func PollOnce(hostname string, c chan IntentNode) error {
+func PollIntent(hostname string, callback func(IntentNode)) error {
 	Info("Polling intent store")
 
 	kv, _ := ppkv.NewClient()
@@ -89,7 +89,7 @@ func PollOnce(hostname string, c chan IntentNode) error {
 		}
 	}
 
-	c <- intent
+	callback(intent)
 
 	return nil
 }

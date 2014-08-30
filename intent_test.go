@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/platypus-platform/pp-kv-consul"
 	"github.com/platypus-platform/pp-logging"
-	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,25 +40,15 @@ var _ = Describe("Reading spec from KV store", func() {
 			"basedir": "/sometmp",
 		})
 
-		c := make(chan IntentNode)
 		s := make([]IntentNode, 0)
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for w := range c {
-				// This is kind of a roundabout way to get the results into a slice.
-				// Surely there is a better way?
-				s = append(s, w)
-			}
-		}()
-		err := PollOnce("testhost", c)
-		close(c)
+
+		err := PollIntent("testhost", func(intent IntentNode) {
+			s = append(s, intent)
+		})
 		if err != nil {
 			Fail(err.Error())
 			return
 		}
-		wg.Wait()
 
 		expected := []IntentNode{
 			IntentNode{
@@ -85,7 +74,7 @@ var _ = Describe("Reading spec from KV store", func() {
 			return
 		}
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 	})
 
 	It("Gracefully handles invalid node data", func() {
@@ -100,7 +89,7 @@ var _ = Describe("Reading spec from KV store", func() {
 
 		kv.Put("nodes/testhost/testapp", 34)
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("Invalid node data"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
@@ -120,7 +109,7 @@ var _ = Describe("Reading spec from KV store", func() {
 			"bogus": "test",
 		})
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("No cluster key"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
@@ -140,7 +129,7 @@ var _ = Describe("Reading spec from KV store", func() {
 			"cluster": "test",
 		})
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("No or invalid data"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
@@ -149,7 +138,7 @@ var _ = Describe("Reading spec from KV store", func() {
 
 		kv.Put("clusters/testapp/test/versions", "bogus")
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("No or invalid data"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
@@ -172,14 +161,14 @@ var _ = Describe("Reading spec from KV store", func() {
 			"abc123": "active",
 		})
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("No or invalid data"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
 
 		buf.Reset()
 		kv.Put("clusters/testapp/test/deploy_config", "bogus")
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("No or invalid data"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
@@ -205,18 +194,14 @@ var _ = Describe("Reading spec from KV store", func() {
 			"basedir": "relative",
 		})
 
-		PollOnce("testhost", Sink())
+		PollIntent("testhost", Sink())
 
 		Expect(buf.String()).To(ContainSubstring("Not allowing relative basedir"))
 		Expect(buf.String()).To(ContainSubstring("testapp"))
 	})
 })
 
-func Sink() chan IntentNode {
-	c := make(chan IntentNode)
-	go func() {
-		for _ = range c {
-		}
-	}()
-	return c
+func Sink() func(IntentNode) {
+	return func(_ IntentNode) {
+	}
 }
