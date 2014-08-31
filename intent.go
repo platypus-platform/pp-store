@@ -1,17 +1,21 @@
 package pp
 
 import (
-	"errors"
 	"github.com/platypus-platform/pp-kv-consul"
 	. "github.com/platypus-platform/pp-logging"
 	"path"
 )
 
+type DeployConfig struct {
+	Basedir string
+	Ports   []int
+}
+
 // The intended state for an application on a node.
 type IntentApp struct {
 	Name     string
 	Versions map[string]string
-	Basedir  string
+	DeployConfig
 }
 
 // The intended state for a particular node.
@@ -64,49 +68,37 @@ func PollIntent(hostname string, callback func(IntentNode)) error {
 		clusterKey := path.Join("clusters", appName, cluster, "versions")
 		configKey := path.Join("clusters", appName, cluster, "deploy_config")
 
-		versions, err := getMap(kv, clusterKey)
-		if err != nil {
+		var versions map[string]string
+		var deployConfig DeployConfig
+
+		if err := kv.Get(clusterKey, &versions); err != nil {
 			Fatal("No or invalid data for %s: %s", clusterKey, err)
 			continue
 		}
 
-		deployConfig, err := getMap(kv, configKey)
+		err = kv.Get(configKey, &deployConfig)
+
 		if err != nil {
 			Fatal("No or invalid data for %s: %s", configKey, err)
 			continue
 		}
 
-		basedir := deployConfig["basedir"]
+		basedir := deployConfig.Basedir
 		if !path.IsAbs(basedir) {
 			Fatal("Not allowing relative basedir in %s", configKey)
 			continue
 		}
 
 		intent.Apps[appName] = IntentApp{
-			Name:     appName,
-			Basedir:  basedir,
-			Versions: versions,
+			Name:         appName,
+			Versions:     versions,
+			DeployConfig: deployConfig,
 		}
 	}
 
 	callback(intent)
 
 	return nil
-}
-
-func getMap(kv *ppkv.Client, query string) (map[string]string, error) {
-	raw, err := kv.Get(query)
-
-	if err != nil {
-		return nil, err
-	}
-
-	mapped, worked := stringMap(raw)
-	if !worked {
-		return nil, errors.New("Not a string map")
-	}
-
-	return mapped, nil
 }
 
 func stringMap(raw interface{}) (map[string]string, bool) {

@@ -10,9 +10,9 @@ import (
 )
 
 func prepareStore() *ppkv.Client {
+	var result interface{}
 	kv, _ := ppkv.NewClient()
-	_, err := kv.Get("test")
-	if err != nil {
+	if err := kv.Get("test", &result); err != nil {
 		return nil
 	}
 
@@ -54,8 +54,10 @@ var _ = Describe("Reading spec from KV store", func() {
 			IntentNode{
 				Apps: map[string]IntentApp{
 					"testapp": IntentApp{
-						Name:    "testapp",
-						Basedir: "/sometmp",
+						Name: "testapp",
+						DeployConfig: DeployConfig{
+							Basedir: "/sometmp",
+						},
 						Versions: map[string]string{
 							"abc123": "prep",
 							"def456": "active",
