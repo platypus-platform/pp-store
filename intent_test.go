@@ -32,9 +32,11 @@ var _ = Describe("Reading spec from KV store", func() {
 		kv.Put("nodes/testhost/testapp", map[string]string{
 			"cluster": "test",
 		})
-		kv.Put("clusters/testapp/test/versions", map[string]string{
-			"abc123": "prep",
-			"def456": "active",
+		kv.Put("clusters/testapp/test/config", AppConfig{
+			Versions: map[string]string{
+				"abc123": "prep",
+				"def456": "active",
+			},
 		})
 		kv.Put("clusters/testapp/test/deploy_config", map[string]string{
 			"basedir": "/sometmp",
@@ -58,9 +60,11 @@ var _ = Describe("Reading spec from KV store", func() {
 						DeployConfig: DeployConfig{
 							Basedir: "/sometmp",
 						},
-						Versions: map[string]string{
-							"abc123": "prep",
-							"def456": "active",
+						AppConfig: AppConfig{
+							Versions: map[string]string{
+								"abc123": "prep",
+								"def456": "active",
+							},
 						},
 					},
 				},
@@ -138,7 +142,7 @@ var _ = Describe("Reading spec from KV store", func() {
 
 		buf.Reset()
 
-		kv.Put("clusters/testapp/test/versions", "bogus")
+		kv.Put("clusters/testapp/test/config", "bogus")
 
 		PollIntent("testhost", Sink())
 
@@ -159,8 +163,10 @@ var _ = Describe("Reading spec from KV store", func() {
 		kv.Put("nodes/testhost/testapp", map[string]string{
 			"cluster": "test",
 		})
-		kv.Put("clusters/testapp/test/versions", map[string]string{
-			"abc123": "active",
+		kv.Put("clusters/testapp/test/config", AppConfig{
+			Versions: map[string]string{
+				"abc123": "active",
+			},
 		})
 
 		PollIntent("testhost", Sink())
@@ -189,8 +195,10 @@ var _ = Describe("Reading spec from KV store", func() {
 		kv.Put("nodes/testhost/testapp", map[string]string{
 			"cluster": "test",
 		})
-		kv.Put("clusters/testapp/test/versions", map[string]string{
-			"abc123": "active",
+		kv.Put("clusters/testapp/test/config", AppConfig{
+			Versions: map[string]string{
+				"abc123": "active",
+			},
 		})
 		kv.Put("clusters/testapp/test/deploy_config", map[string]string{
 			"basedir": "relative",

@@ -11,10 +11,15 @@ type DeployConfig struct {
 	Ports   []int
 }
 
+type AppConfig struct {
+	Versions map[string]string
+	MinNodes int
+}
+
 // The intended state for an application on a node.
 type IntentApp struct {
-	Name     string
-	Versions map[string]string
+	Name string
+	AppConfig
 	DeployConfig
 }
 
@@ -65,13 +70,13 @@ func PollIntent(hostname string, callback func(IntentNode)) error {
 			continue
 		}
 
-		clusterKey := path.Join("clusters", appName, cluster, "versions")
+		clusterKey := path.Join("clusters", appName, cluster, "config")
 		configKey := path.Join("clusters", appName, cluster, "deploy_config")
 
-		var versions map[string]string
+		var appConfig AppConfig
 		var deployConfig DeployConfig
 
-		if err := kv.Get(clusterKey, &versions); err != nil {
+		if err := kv.Get(clusterKey, &appConfig); err != nil {
 			Fatal("No or invalid data for %s: %s", clusterKey, err)
 			continue
 		}
@@ -91,7 +96,7 @@ func PollIntent(hostname string, callback func(IntentNode)) error {
 
 		intent.Apps[appName] = IntentApp{
 			Name:         appName,
-			Versions:     versions,
+			AppConfig:    appConfig,
 			DeployConfig: deployConfig,
 		}
 	}
