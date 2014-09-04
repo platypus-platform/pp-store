@@ -12,8 +12,9 @@ type DeployConfig struct {
 }
 
 type AppConfig struct {
-	Versions map[string]string
-	MinNodes int
+	Versions   map[string]string
+	MinNodes   int
+	UserConfig map[string]interface{} `json:"user_config"`
 }
 
 // The intended state for an application on a node.

@@ -12,6 +12,9 @@ puts cmd
 
 config = {
   "min_nodes" => 0,
+  "user_config" => {
+    "some_value" => "hello",
+  },
   "versions" => {
     "e928e5ad8814441e7c503d7f6c9e55d72584c006" => 'prep',
     '56d459e7c581b913ad5afa627064d62aea2cfac3' => 'active'
